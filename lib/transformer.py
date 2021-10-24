@@ -1,3 +1,4 @@
+from typing import List, Tuple
 import requests
 import re
 import html2text
@@ -18,7 +19,7 @@ class Config:
 
 class Article:
     def __init__(self, article_id, config):
-        resp = request(article_id, config.user_agent)
+        resp = request_article(article_id, config.user_agent)
         assert resp.status_code == 200
         self.text = resp.text
         self.json = article_json = resp.json()
@@ -32,14 +33,37 @@ class Article:
         self.markdown = html2text.html2text(self.content)
 
 
-def request(article_id, user_agent):
+class Answer:
+    def __init__(self, answer_id, config) -> None:
+        resp = request_article(answer_id, config.user_agent)
+        assert resp.status_code == 200
+        self.text = resp.text
+        self.json = answer_json = resp.json()
+        self.id = answer_json['id']
+
+
+def request_article(article_id, user_agent):
     article_api_url = f'https://api.zhihu.com/articles/{article_id}'
     headers = {'user-agent': user_agent}
     return requests.get(article_api_url, headers=headers)
 
 
-def request_json(article_id, user_agent):
-    return request(article_id, user_agent).json()
+def request_article_json(article_id, user_agent):
+    return request_article(article_id, user_agent).json()
+
+
+def request_answer(answer_id, user_agent, include=None):
+    answer_api_url = f'https://api.zhihu.com/answers/{answer_id}'
+    if include:
+        if isinstance(include, List, Tuple):
+            include = ','.join(include)
+        answer_api_url += f'?include={include}'
+    headers = {'user-agent': user_agent}
+    return requests.get(answer_api_url, headers=headers)
+
+
+def request_answer_json(answer_id, user_agent, include=None):
+    return request_answer(answer_id, user_agent, include=include).json()
 
 
 def preprocess_content(content, download_image, asset_path):
